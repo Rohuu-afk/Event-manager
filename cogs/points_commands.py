@@ -13,9 +13,10 @@ logger = logging.getLogger(__name__)
 class PointsCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        logger.info("PointsCommands cog initialized")
 
     @commands.command(name='rank')
-    async def rank(self, ctx, member: discord.Member = None):
+    async def rank(self, ctx, *, member: discord.Member = None):
         """Display user's rank card or another member's rank card if mentioned"""
         try:
             # If no member is mentioned, use the command author
@@ -34,7 +35,7 @@ class PointsCommands(commands.Cog):
             # Draw background rectangle
             draw.rectangle((10, 10, 924, 272), fill=(54, 57, 63, 255))
 
-            # Load and paste user avatar
+            # Draw avatar circle
             avatar_size = 180
             mask = Image.new('L', (avatar_size, avatar_size), 0)
             mask_draw = ImageDraw.Draw(mask)
@@ -57,7 +58,7 @@ class PointsCommands(commands.Cog):
             # Load font with adjusted sizes
             try:
                 title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
-                normal_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
+                normal_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)  # Smaller font for better fit
             except:
                 title_font = ImageFont.load_default()
                 normal_font = ImageFont.load_default()
@@ -67,8 +68,8 @@ class PointsCommands(commands.Cog):
             draw.text((280, 100), f"⭐ Points: {points}", fill='white', font=normal_font)
             draw.text((280, 140), f"👑 Rank: #{rank}", fill='white', font=normal_font)
 
-            # Single line message with discord theme and correct text
-            draw.text((280, 180), "🎉 Invite your discord friends here to compete with them 🎮", 
+            # Draw invitation text in one line with the exact requested text
+            draw.text((280, 190), "Make your friends join Event avengers too for fun competition!", 
                      fill=(114, 137, 218), font=normal_font)  # Discord blurple color
 
             # Save and send
@@ -136,34 +137,6 @@ class PointsCommands(commands.Cog):
         except Exception as e:
             logger.error(f"Error generating leaderboard: {e}")
             await ctx.send("Error generating leaderboard. Please try again later.")
-
-    @commands.command(name='addpoints')
-    @commands.has_permissions(administrator=True)
-    async def addpoints(self, ctx, user: discord.Member, amount: int):
-        """Add points to a user (Admin only)"""
-        try:
-            user_id = str(user.id)
-            self.bot.points[user_id] = self.bot.points.get(user_id, 0) + amount
-            await self.bot.save_points()
-            await ctx.send(f"Added {amount} points to {user.display_name}. Total points: {self.bot.points[user_id]}")
-            logger.info(f"Added {amount} points to user {user.name}")
-        except Exception as e:
-            logger.error(f"Error adding points: {e}")
-            await ctx.send("Error adding points. Please try again later.")
-
-    @commands.command(name='removepoints')
-    @commands.has_permissions(administrator=True)
-    async def removepoints(self, ctx, user: discord.Member, amount: int):
-        """Remove points from a user (Admin only)"""
-        try:
-            user_id = str(user.id)
-            self.bot.points[user_id] = max(0, self.bot.points.get(user_id, 0) - amount)
-            await self.bot.save_points()
-            await ctx.send(f"Removed {amount} points from {user.display_name}. Total points: {self.bot.points[user_id]}")
-            logger.info(f"Removed {amount} points from user {user.name}")
-        except Exception as e:
-            logger.error(f"Error removing points: {e}")
-            await ctx.send("Error removing points. Please try again later.")
 
 async def setup(bot):
     await bot.add_cog(PointsCommands(bot))
