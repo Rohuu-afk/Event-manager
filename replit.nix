@@ -1,5 +1,7 @@
 {pkgs}: {
   deps = [
+    pkgs.vercel-pkg
+    pkgs.python312Packages.python-ly
     pkgs.zlib
     pkgs.openjpeg
     pkgs.libxcrypt
