@@ -16,12 +16,12 @@ class PointsCommands(commands.Cog):
         logger.info("PointsCommands cog initialized")
 
     @commands.command(name='rank')
-    async def rank(self, ctx, *, member: discord.Member = None):
+    async def rank(self, ctx, user: discord.Member = None):
         """Display user's rank card or another member's rank card if mentioned"""
         try:
             # If no member is mentioned, use the command author
-            user = member if member else ctx.author
-            user_id = str(user.id)
+            target_user = user or ctx.author
+            user_id = str(target_user.id)
             points = self.bot.points.get(user_id, 0)
 
             # Calculate rank
@@ -42,7 +42,7 @@ class PointsCommands(commands.Cog):
             mask_draw.ellipse((0, 0, avatar_size, avatar_size), fill=255)
 
             # Get user avatar
-            avatar_url = str(user.avatar.url) if user.avatar else user.default_avatar.url
+            avatar_url = str(target_user.avatar.url) if target_user.avatar else target_user.default_avatar.url
             response = requests.get(avatar_url)
             avatar = Image.open(BytesIO(response.content))
             avatar = avatar.resize((avatar_size, avatar_size))
@@ -58,7 +58,7 @@ class PointsCommands(commands.Cog):
             # Load font with adjusted sizes
             try:
                 title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
-                normal_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)  # Smaller font for better fit
+                normal_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
             except:
                 title_font = ImageFont.load_default()
                 normal_font = ImageFont.load_default()
@@ -68,7 +68,7 @@ class PointsCommands(commands.Cog):
             draw.text((280, 100), f"⭐ Points: {points}", fill='white', font=normal_font)
             draw.text((280, 140), f"👑 Rank: #{rank}", fill='white', font=normal_font)
 
-            # Draw invitation text in one line with the exact requested text
+            # Draw invitation text in one line
             draw.text((280, 190), "Make your friends join Event avengers too for fun competition!", 
                      fill=(114, 137, 218), font=normal_font)  # Discord blurple color
 
@@ -78,65 +78,31 @@ class PointsCommands(commands.Cog):
             buffer.seek(0)
 
             await ctx.send(file=discord.File(buffer, 'rank_card.png'))
-            logger.info(f"Generated rank card for user {user.name}")
+            logger.info(f"Generated rank card for user {target_user.name}")
 
         except Exception as e:
             logger.error(f"Error generating rank card: {e}")
             await ctx.send("Error generating rank card. Please try again later.")
 
-    @commands.command(name='leaderboard')
-    async def leaderboard(self, ctx):
-        """Display the points leaderboard"""
+    @commands.command(name='pointsystem')
+    async def pointsystem(self, ctx):
+        """Display information about the point system"""
         try:
-            sorted_points = sorted(self.bot.points.items(), key=lambda x: x[1], reverse=True)[:10]
-            users = [ctx.guild.get_member(int(user_id)) for user_id, _ in sorted_points]
-            scores = [score for _, score in sorted_points]
+            # Send point system info as a regular message
+            points_info = (
+                "📊 **Event Avengers Point System**\n\n"
+                "🎯 Point Earnings:\n"
+                "• Invites: 8 points (tracked by <@720351927581278219>)\n"
+                "• Daily event winning: 10 points\n"
+                "• Quick event winning: 30 points\n"
+                "• Long event winning: 90 points"
+            )
 
-            # Create leaderboard visualization
-            plt.style.use('dark_background')
-            fig = plt.figure(figsize=(10, len(users) * 0.8))
-            ax = plt.gca()
-            fig.patch.set_facecolor('#2C2F33')
-            ax.set_facecolor('#2C2F33')
-
-            y_positions = np.arange(len(users) - 1, -1, -1) * 2.0
-
-            for i, y_pos in enumerate(y_positions):
-                bg_color = '#36393f' if i % 2 == 0 else '#2f3136'
-                rect = plt.Rectangle(
-                    (0.2, y_pos - 0.8), 3.6, 1.6,
-                    facecolor=bg_color, alpha=0.5, linewidth=2,
-                    edgecolor='#7289da' if i < 3 else '#36393f'
-                )
-                ax.add_patch(rect)
-
-            for i, (user, score, y_pos) in enumerate(zip(users, scores, y_positions)):
-                if user:  # Only display if user is still in the server
-                    rank_color = '#ffd700' if i < 3 else 'white'
-                    plt.text(0.5, y_pos, f"🏆 #{i+1}", fontsize=16, weight='bold', va='center', ha='center', color=rank_color)
-                    plt.text(1.5, y_pos, f"{user.name}", fontsize=14, weight='bold', va='center', ha='left', color='white')
-                    plt.text(3.5, y_pos, f"Points: {score}", fontsize=14, va='center', ha='right', color='#7289da')
-
-            ax.set_xticks([])
-            ax.set_yticks([])
-            for spine in ax.spines.values():
-                spine.set_visible(False)
-
-            plt.xlim(0, 4)
-            plt.ylim(-0.8, max(y_positions) + 0.8 if y_positions.size > 0 else 1)
-            plt.title("👑 Leaderboard 👑", pad=20, fontsize=24, color='white', weight='bold')
-
-            buf = io.BytesIO()
-            plt.savefig(buf, format='png', bbox_inches='tight', dpi=300)
-            buf.seek(0)
-            plt.close()
-
-            await ctx.send(file=discord.File(buf, "leaderboard.png"))
-            logger.info(f"Generated leaderboard for server {ctx.guild.name}")
-
+            await ctx.send(points_info)
+            logger.info(f"Point system info displayed for user {ctx.author.name}")
         except Exception as e:
-            logger.error(f"Error generating leaderboard: {e}")
-            await ctx.send("Error generating leaderboard. Please try again later.")
+            logger.error(f"Error displaying point system info: {e}")
+            await ctx.send("Error displaying point system information. Please try again later.")
 
 async def setup(bot):
     await bot.add_cog(PointsCommands(bot))
