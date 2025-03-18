@@ -63,7 +63,16 @@ class ResilientBot(commands.Bot):
             logger.error(f"Error saving points data: {e}")
 
     async def setup_hook(self):
+        """Setup hook to initialize bot components"""
+        # Load cogs
+        await self.load_extension('cogs.basic_commands')
+        await self.load_extension('cogs.error_handler')
+        logger.info("All cogs loaded successfully")
+
+        # Start periodic save task
         self.loop.create_task(self.periodic_save())
+
+        logger.info("All commands registered successfully")
 
     async def periodic_save(self):
         while not self.is_closed():
@@ -176,7 +185,7 @@ class ResilientBot(commands.Bot):
             draw = ImageDraw.Draw(img)
 
             # Draw background rectangle
-            draw.rectangle([(10, 10), (924, 272)], fill=(54, 57, 63, 255))
+            draw.rectangle((10, 10, 924, 272), fill=(54, 57, 63, 255))
 
             # Load and paste user avatar
             avatar_size = 180
