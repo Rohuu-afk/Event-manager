@@ -1,0 +1,100 @@
+import discord
+from discord.ext import commands
+import json
+import matplotlib.pyplot as plt
+import io
+import numpy as np
+from PIL import Image
+
+# Load points data
+try:
+    with open("points.json", "r") as f:
+        points = json.load(f)
+except FileNotFoundError:
+    points = {}
+
+# Bot setup
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Your user ID (to restrict add/remove points commands)
+YOUR_USER_ID = 1234567890  # Replace with your user ID
+
+# Command to add points (only you can use this)
+@bot.command()
+async def addpoints(ctx, user: discord.Member, amount: int):
+    if ctx.author.id != YOUR_USER_ID:
+        await ctx.send("You don't have permission to use this command.")
+        return
+
+    user_id = str(user.id)
+    points[user_id] = points.get(user_id, 0) + amount
+
+    with open("points.json", "w") as f:
+        json.dump(points, f)
+
+    await ctx.send(f"Added {amount} points to {user.display_name}. Total points: {points[user_id]}")
+
+# Command to remove points (only you can use this)
+@bot.command()
+async def removepoints(ctx, user: discord.Member, amount: int):
+    if ctx.author.id != YOUR_USER_ID:
+        await ctx.send("You don't have permission to use this command.")
+        return
+
+    user_id = str(user.id)
+    points[user_id] = max(0, points.get(user_id, 0) - amount)
+
+    with open("points.json", "w") as f:
+        json.dump(points, f)
+
+    await ctx.send(f"Removed {amount} points from {user.display_name}. Total points: {points[user_id]}")
+
+# Command to show leaderboard (anyone can use this)
+@bot.command()
+async def leaderboard(ctx):
+    sorted_points = sorted(points.items(), key=lambda x: x[1], reverse=True)[:10]
+    users = [ctx.guild.get_member(int(user_id)) for user_id, _ in sorted_points]
+    scores = [score for _, score in sorted_points]
+
+    # Customize the appearance of the leaderboard
+    plt.style.use('dark_background')
+    fig = plt.figure(figsize=(10, len(users) * 0.8))
+    ax = plt.gca()
+    fig.patch.set_facecolor('#2C2F33')
+    ax.set_facecolor('#2C2F33')
+
+    y_positions = np.arange(len(users) - 1, -1, -1) * 2.0
+
+    for i, y_pos in enumerate(y_positions):
+        bg_color = '#36393f' if i % 2 == 0 else '#2f3136'
+        rect = plt.Rectangle((0.2, y_pos - 0.8), 3.6, 1.6,
+                             facecolor=bg_color, alpha=0.5, linewidth=2,
+                             edgecolor='#7289da' if i < 3 else '#36393f')
+        ax.add_patch(rect)
+
+    for i, (user, score, y_pos) in enumerate(zip(users, scores, y_positions)):
+        rank_color = '#ffd700' if i < 3 else 'white'
+        plt.text(0.5, y_pos, f"🏆 #{i+1}", fontsize=16, weight='bold', va='center', ha='center', color=rank_color)
+        plt.text(1.5, y_pos, f"{user.name}", fontsize=14, weight='bold', va='center', ha='left', color='white')
+        plt.text(3.5, y_pos, f"Points: {score}", fontsize=14, va='center', ha='right', color='#7289da')
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    plt.xlim(0, 4)
+    plt.ylim(-0.8, max(y_positions) + 0.8)
+    plt.title("👑 Leaderboard 👑", pad=20, fontsize=24, color='white', weight='bold')
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', dpi=300)
+    buf.seek(0)
+
+    await ctx.send(file=discord.File(buf, "leaderboard.png"))
+
+# Run the bot
+bot.run("YOUR_BOT_TOKEN")
