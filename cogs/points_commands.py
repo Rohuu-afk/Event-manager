@@ -53,20 +53,20 @@ class PointsCommands(commands.Cog):
             # Paste avatar
             img.paste(output, (50, 51), output)
 
-            # Load font
+            # Load font with adjusted sizes
             try:
-                title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 48)
-                normal_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 36)
+                title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)  # Reduced from 48
+                normal_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)  # Reduced from 36
             except:
                 title_font = ImageFont.load_default()
                 normal_font = ImageFont.load_default()
 
-            # Draw text
-            draw.text((280, 30), "Event Avenger rank card", fill='white', font=title_font)
+            # Draw text with adjusted positioning
+            draw.text((280, 40), "Event Avenger Rank Card", fill='white', font=title_font)
             draw.text((280, 120), f"Points: {points}", fill='white', font=normal_font)
             draw.text((280, 170), f"Rank: #{rank}", fill='white', font=normal_font)
-            draw.text((280, 220), "Make your friends join Event avengers too for fun competition!", 
-                     fill=(114, 137, 218), font=normal_font)  # Discord blurple color
+            draw.text((280, 220), "Join Event Avengers for fun competition!", 
+                     fill=(114, 137, 218), font=normal_font)  # Shortened text and Discord blurple color
 
             # Save and send
             buffer = BytesIO()

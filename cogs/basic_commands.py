@@ -11,6 +11,7 @@ class BasicCommands(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        """Called when the cog is ready"""
         logger.info("BasicCommands cog is ready")
         # Log available commands
         commands_list = [cmd.name for cmd in self.bot.commands]
@@ -21,7 +22,7 @@ class BasicCommands(commands.Cog):
         """Check bot's latency"""
         try:
             latency = round(self.bot.latency * 1000)
-            await ctx.send(f'Pong! Latency: {latency}ms')
+            await ctx.send(f'Pong! 🏓 Latency: {latency}ms')
             logger.debug(f"Ping command executed by {ctx.author}. Latency: {latency}ms")
         except Exception as e:
             logger.error(f"Error in ping command: {str(e)}")
@@ -32,12 +33,14 @@ class BasicCommands(commands.Cog):
         """Check bot's status"""
         try:
             embed = discord.Embed(
-                title="Bot Status",
+                title="🤖 Bot Status",
                 color=discord.Color.green()
             )
-            embed.add_field(name="Uptime", value="Online", inline=True)
-            embed.add_field(name="Ping", value=f"{round(self.bot.latency * 1000)}ms", inline=True)
-            embed.add_field(name="Commands", value=len(self.bot.commands), inline=True)
+            embed.add_field(name="Status", value="🟢 Online", inline=True)
+            embed.add_field(name="Latency", value=f"🏓 {round(self.bot.latency * 1000)}ms", inline=True)
+            embed.add_field(name="Commands", value=f"📝 {len(self.bot.commands)}", inline=True)
+            embed.set_footer(text="Type !help to see all available commands")
+
             await ctx.send(embed=embed)
             logger.debug(f"Status command executed by {ctx.author}")
         except Exception as e:
