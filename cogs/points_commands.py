@@ -15,11 +15,12 @@ class PointsCommands(commands.Cog):
         self.bot = bot
 
     @commands.command(name='rank')
-    async def rank(self, ctx):
-        """Display user's rank card"""
+    async def rank(self, ctx, member: discord.Member = None):
+        """Display user's rank card or another member's rank card if mentioned"""
         try:
-            # Get user data
-            user_id = str(ctx.author.id)
+            # If no member is mentioned, use the command author
+            user = member if member else ctx.author
+            user_id = str(user.id)
             points = self.bot.points.get(user_id, 0)
 
             # Calculate rank
@@ -40,7 +41,7 @@ class PointsCommands(commands.Cog):
             mask_draw.ellipse((0, 0, avatar_size, avatar_size), fill=255)
 
             # Get user avatar
-            avatar_url = str(ctx.author.avatar.url) if ctx.author.avatar else ctx.author.default_avatar.url
+            avatar_url = str(user.avatar.url) if user.avatar else user.default_avatar.url
             response = requests.get(avatar_url)
             avatar = Image.open(BytesIO(response.content))
             avatar = avatar.resize((avatar_size, avatar_size))
@@ -55,18 +56,20 @@ class PointsCommands(commands.Cog):
 
             # Load font with adjusted sizes
             try:
-                title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)  # Reduced from 48
-                normal_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)  # Reduced from 36
+                title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
+                normal_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
             except:
                 title_font = ImageFont.load_default()
                 normal_font = ImageFont.load_default()
 
-            # Draw text with adjusted positioning
-            draw.text((280, 40), "Event Avenger Rank Card", fill='white', font=title_font)
-            draw.text((280, 120), f"Points: {points}", fill='white', font=normal_font)
-            draw.text((280, 170), f"Rank: #{rank}", fill='white', font=normal_font)
-            draw.text((280, 220), "Join Event Avengers for fun competition!", 
-                     fill=(114, 137, 218), font=normal_font)  # Shortened text and Discord blurple color
+            # Draw text with emojis
+            draw.text((280, 50), "🎮 Event Avenger Rank Card 🎮", fill='white', font=title_font)
+            draw.text((280, 100), f"⭐ Points: {points}", fill='white', font=normal_font)
+            draw.text((280, 140), f"👑 Rank: #{rank}", fill='white', font=normal_font)
+
+            # Single line message with discord theme and correct text
+            draw.text((280, 180), "🎉 Invite your discord friends here to compete with them 🎮", 
+                     fill=(114, 137, 218), font=normal_font)  # Discord blurple color
 
             # Save and send
             buffer = BytesIO()
@@ -74,7 +77,7 @@ class PointsCommands(commands.Cog):
             buffer.seek(0)
 
             await ctx.send(file=discord.File(buffer, 'rank_card.png'))
-            logger.info(f"Generated rank card for user {ctx.author.name}")
+            logger.info(f"Generated rank card for user {user.name}")
 
         except Exception as e:
             logger.error(f"Error generating rank card: {e}")
