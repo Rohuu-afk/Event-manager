@@ -10,6 +10,10 @@ import logging
 import asyncio
 import signal
 from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont
+import requests
+from io import BytesIO
+import math
 
 # Setup logging
 logging.basicConfig(
@@ -154,6 +158,72 @@ class ResilientBot(commands.Bot):
         except Exception as e:
             logger.error(f"Error generating leaderboard: {e}")
             await ctx.send("Error generating leaderboard. Please try again later.")
+
+    @commands.command()
+    async def rank(self, ctx):
+        """Display user's rank card"""
+        try:
+            # Get user data
+            user_id = str(ctx.author.id)
+            points = self.points.get(user_id, 0)
+
+            # Calculate rank
+            sorted_points = sorted(self.points.items(), key=lambda x: x[1], reverse=True)
+            rank = next((i + 1 for i, (uid, _) in enumerate(sorted_points) if uid == user_id), len(self.points) + 1)
+
+            # Create base image
+            img = Image.new('RGBA', (934, 282), (44, 47, 51, 255))  # Discord dark theme background
+            draw = ImageDraw.Draw(img)
+
+            # Draw background rectangle
+            draw.rectangle([(10, 10), (924, 272)], fill=(54, 57, 63, 255))
+
+            # Load and paste user avatar
+            avatar_size = 180
+            mask = Image.new('L', (avatar_size, avatar_size), 0)
+            mask_draw = ImageDraw.Draw(mask)
+            mask_draw.ellipse((0, 0, avatar_size, avatar_size), fill=255)
+
+            # Get user avatar
+            avatar_url = str(ctx.author.avatar.url) if ctx.author.avatar else ctx.author.default_avatar.url
+            response = requests.get(avatar_url)
+            avatar = Image.open(BytesIO(response.content))
+            avatar = avatar.resize((avatar_size, avatar_size))
+
+            # Apply circular mask to avatar
+            output = Image.new('RGBA', (avatar_size, avatar_size), (0, 0, 0, 0))
+            output.paste(avatar, (0, 0))
+            output.putalpha(mask)
+
+            # Paste avatar
+            img.paste(output, (50, 51), output)
+
+            # Load font (using a default system font - you can change this)
+            try:
+                title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 48)
+                normal_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 36)
+            except:
+                # Fallback to default font if the system font is not available
+                title_font = ImageFont.load_default()
+                normal_font = ImageFont.load_default()
+
+            # Draw text
+            draw.text((280, 30), "Event Avenger rank card", fill='white', font=title_font)
+            draw.text((280, 120), f"Points: {points}", fill='white', font=normal_font)
+            draw.text((280, 170), f"Rank: #{rank}", fill='white', font=normal_font)
+            draw.text((280, 220), "Make your friends join Event avengers too for fun competition!", 
+                     fill=(114, 137, 218), font=normal_font)  # Discord blurple color
+
+            # Save and send
+            buffer = BytesIO()
+            img.save(buffer, 'PNG')
+            buffer.seek(0)
+
+            await ctx.send(file=discord.File(buffer, 'rank_card.png'))
+
+        except Exception as e:
+            logger.error(f"Error generating rank card: {e}")
+            await ctx.send("Error generating rank card. Please try again later.")
 
     async def close(self):
         """Clean shutdown of the bot"""
